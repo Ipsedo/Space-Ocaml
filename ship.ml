@@ -334,6 +334,10 @@ class game (right : int) (up : int) =
 																|2 -> [0;4;7;10]
 																|4 -> [0;2;4;6;9]
 																|_ -> [0;2;4;6;8;10]
+		method private quit = match Sdlevent.poll () with
+								None -> ()
+								|Some evt when evt = Sdlevent.QUIT -> exit 0
+								|Some _ -> ()																
 		method private game_level (blocks : blocks) (score_max : int) (blocks_spawn : int list) = let rec aux bl cpt score score_max blocks_spawn =
 													Sdlevent.pump ();
 
@@ -371,6 +375,8 @@ class game (right : int) (up : int) =
 													bo#draw;
 													self#draw_score score score_max;
 													s#draw_live;
+													
+													self#quit;
 
 													self#wait t;
 
@@ -415,6 +421,8 @@ class game (right : int) (up : int) =
 													boss_balls#draw;
 													s#draw_live;
 													boss#draw_lives;
+													
+													self#quit;
 
 													self#wait t;
 
