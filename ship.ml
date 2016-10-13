@@ -240,7 +240,7 @@ class balls (ball : ball list) (right : int) (up : int) (screen : Sdlvideo.surfa
 	end
 
 class game (right : int) (up : int) =
-	let screen = Sdlvideo.set_video_mode right up [`DOUBLEBUF;`FULLSCREEN] in
+	let screen = Sdlvideo.set_video_mode right up [`DOUBLEBUF] in
 	let ship = new ship 50 (up-10) 10 10 right up 10 (1,220,242) screen First [10] in
 	let balls = new balls [] right up screen in
 	let bonus = new bonus_list [] right up screen in
