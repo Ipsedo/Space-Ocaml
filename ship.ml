@@ -313,7 +313,7 @@ class game (right : int) (up : int) =
 		method private draw_score (score : int) (score_max : int) = let font = Sdlttf.open_font font 20 in
 																let text1 = Sdlttf.render_text_blended font ((string_of_int score)^" < "^(string_of_int score_max)) ~fg:(20,255,20) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r * 3 / 4) (u - 35) 30 30) ~src:text1 ~dst:scr ()
-		method private wait (t1 : float) = let rec aux t1 =
+		method private wait (t1 : float) = let rec aux t1 = self#quit;
 												let t2 = Sys.time () in
 												if (t2 -. t1 > (1. /. fps)) then Sdlvideo.flip scr
 												else aux t1 
@@ -376,8 +376,6 @@ class game (right : int) (up : int) =
 													self#draw_score score score_max;
 													s#draw_live;
 													
-													self#quit;
-
 													self#wait t;
 
 													let (_,_,button) = Sdlmouse.get_state () in
@@ -421,8 +419,6 @@ class game (right : int) (up : int) =
 													boss_balls#draw;
 													s#draw_live;
 													boss#draw_lives;
-													
-													self#quit;
 
 													self#wait t;
 
