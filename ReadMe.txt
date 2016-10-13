@@ -1,6 +1,6 @@
 Needed :
   - SDL
-  - OcamlSDL
+  - OCamlSDL
 
 Compile with :
   - ocamlc bigarray.cma -I +sdl sdl.cma sdlloader.cma sdlttf.cma sdlmixer.cma -thread -o ship ship.ml
