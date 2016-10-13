@@ -1,1 +1,1 @@
-All boss's songs are only chosen in a mockery way
+All boss's images are only chosen in a humor way
