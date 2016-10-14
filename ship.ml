@@ -10,8 +10,10 @@ let lepen_cry = current_dir^"/Songs/boss_01.wav"
 let trump_cry = current_dir^"/Songs/boss_02.wav"
 let hitler_cry = current_dir^"/Songs/boss_03.wav"
 let kim_cry = current_dir^"/Songs/boss_04.wav"
-let gameover = ""
-let congratulation = ""
+let game_over = current_dir^"/Songs/game_over.wav"
+let congratulation = current_dir^"/Songs/win.wav"
+let power_up = current_dir^"/Songs/power_up.wav"
+let life_up = current_dir^"/Songs/life_up.wav"
 
 let font = current_dir^"/Fonts/Rosewood.ttf"
 
@@ -114,14 +116,20 @@ class ship (x : int) (y : int) (height : int) (width :int) (right : int) (up : i
 									|[5;10] -> f <- [3;7;10]
 									|[3;7;10] -> f <- [0;3;6;9]
 									|_ -> f <- [0;3;6;9]
+		method private power_up_song = let music = Sdlmixer.loadWAV power_up in
+								Sdlmixer.setvolume_chunk music 0.15;
+								Sdlmixer.play_channel music
+		method private life_up_song = let music = Sdlmixer.loadWAV life_up in
+								Sdlmixer.setvolume_chunk music 0.15;
+								Sdlmixer.play_channel music
 		method move = x <- self#get_x
 		method draw_live = let font = Sdlttf.open_font font 20 in
     					let text = Sdlttf.render_text_blended font (string_of_int l) ~fg:(1,220,242) in
     					Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 4) (u - 35) 30 30) ~src:text ~dst:s ()
 		method private bonus_upgrade (other :base_item) = match other#bt with
-														Weapon -> self#upgrade_bonus
-														|Life -> self#decrement_life (-1)
-														|Frequence -> self#upgrade_freq
+														Weapon -> self#power_up_song; self#upgrade_bonus
+														|Life -> self#life_up_song; self#decrement_life (-1)
+														|Frequence -> self#power_up_song; self#upgrade_freq
 		method private collision (other : base_item) = if other#is_bonus then match self#collison_bonus other with
 																				true -> self#bonus_upgrade other
 																				|_ -> ()
@@ -241,7 +249,7 @@ class balls (ball : ball list) (right : int) (up : int) (screen : Sdlvideo.surfa
 
 class game (right : int) (up : int) =
 	let screen = Sdlvideo.set_video_mode right up [`DOUBLEBUF] in
-	let ship = new ship 50 (up-10) 10 10 right up 10 (1,220,242) screen First [10] in
+	let ship = new ship 50 (up - 10) 10 10 right up 10 (1,220,242) screen First [10] in
 	let balls = new balls [] right up screen in
 	let bonus = new bonus_list [] right up screen in
 	let bc = Sdlloader.load_image background in
@@ -269,11 +277,17 @@ class game (right : int) (up : int) =
 							let music = Sdlmixer.loadWAV music_loop in
 							Sdlmixer.play_channel ~channel:(channel_music-1) ~loops:(-1) music
 		method private game_over (lose : bool) (fst_time : bool) = if lose && (not fst_time) then begin
+																Sdlmixer.pause_channel (channel_music-1);
+																let music = Sdlmixer.loadWAV game_over in
+																Sdlmixer.play_channel ~channel:(channel_music-2) music;
 																let font = Sdlttf.open_font font 50 in
 																let text1 = Sdlttf.render_text_blended font "Game Over :(" ~fg:(210,67,37) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 6) (u / 10) 30 30) ~src:text1 ~dst:scr () end
 															else ()
 		method private win (win : bool) (fst_time : bool) = if win && (not fst_time) then begin
+																Sdlmixer.pause_channel (channel_music-1);
+																let music = Sdlmixer.loadWAV congratulation in
+																Sdlmixer.play_channel ~channel:(channel_music-2) music;
 																let font = Sdlttf.open_font font 50 in
 																let text1 = Sdlttf.render_text_blended font "Congratulation !" ~fg:(210,67,37) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 6) (u / 10) 30 30) ~src:text1 ~dst:scr () end
@@ -293,6 +307,9 @@ class game (right : int) (up : int) =
     															let text3 = Sdlttf.render_text_blended font "Ship, control and fire with Mouse" ~fg:(1,220,242) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 6) (u * 3 / 4) 30 30) ~src:text3 ~dst:scr ();
 
+    															let text4 = Sdlttf.render_text_blended font "In game, Press space to pause" ~fg:(242,242,7) in
+    															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 3) (u * 5 / 6) 30 30) ~src:text4 ~dst:scr ();
+
     															let text4 = Sdlttf.render_text_blended font "Press Enter to start" ~fg:(242,242,7) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r / 15) (u - 40) 30 30) ~src:text4 ~dst:scr ();
 
@@ -307,17 +324,30 @@ class game (right : int) (up : int) =
 																	let event = Sdlevent.wait_event () in
 																	match event with
 																	Sdlevent.KEYDOWN (_) when Sdlkey.is_key_pressed Sdlkey.KEY_q -> exit 0
-																	|Sdlevent.KEYDOWN (_) when Sdlkey.is_key_pressed Sdlkey.KEY_RETURN -> ()
+																	|Sdlevent.KEYDOWN (_) when Sdlkey.is_key_pressed Sdlkey.KEY_RETURN -> Sdlmixer.expire_channel (channel_music-2) None; Sdlmixer.resume_channel (channel_music-1); ()
 																	|_ -> aux ()
 																in aux ()
 		method private draw_score (score : int) (score_max : int) = let font = Sdlttf.open_font font 20 in
-																let text1 = Sdlttf.render_text_blended font ((string_of_int score)^" < "^(string_of_int score_max)) ~fg:(20,255,20) in
+																let text1 = Sdlttf.render_text_blended font ((string_of_int score)^" / "^(string_of_int score_max)) ~fg:(20,255,20) in
     															Sdlvideo.blit_surface ~dst_rect:(Sdlvideo.rect (r * 3 / 4) (u - 35) 30 30) ~src:text1 ~dst:scr ()
-		method private wait (t1 : float) = let rec aux t1 = self#quit;
-												let t2 = Sys.time () in
-												if (t2 -. t1 > (1. /. fps)) then Sdlvideo.flip scr
-												else aux t1 
-											in aux t1
+    	method private quit_pause_1 =  match Sdlevent.poll () with
+								None -> ()
+								|Some evt when Sdlkey.is_key_pressed Sdlkey.KEY_SPACE -> self#quit_pause_2
+								|Some evt when evt = Sdlevent.QUIT -> exit 0
+								|Some _ -> ()
+		method private quit_pause_2 = let rec aux () =
+									match Sdlevent.poll () with
+									None -> aux ()
+									|Some evt when Sdlkey.is_key_pressed Sdlkey.KEY_SPACE -> ()
+									|Some evt when evt = Sdlevent.QUIT -> exit 0
+									|Some _ -> aux ()
+								in aux ()
+		method private wait (t1 : float) = let rec aux t1 =
+											self#quit_pause_1;
+											let t2 = Sys.time () in
+											if (t2 -. t1 > (1. /. fps)) then Sdlvideo.flip scr
+											else aux t1 
+										in aux t1
 		method private compt_fire (x : int) = if x = 10 then 0 else x + 1
 		method private boss_cry (num : int) = match num with
 											1 -> let music = Sdlmixer.loadWAV lepen_cry in Sdlmixer.setvolume_chunk music 0.5; Sdlmixer.play_channel music
@@ -334,10 +364,7 @@ class game (right : int) (up : int) =
 																|2 -> [0;4;7;10]
 																|4 -> [0;2;4;6;9]
 																|_ -> [0;2;4;6;8;10]
-		method private quit = match Sdlevent.poll () with
-								None -> ()
-								|Some evt when evt = Sdlevent.QUIT -> exit 0
-								|Some _ -> ()																
+																		
 		method private game_level (blocks : blocks) (score_max : int) (blocks_spawn : int list) = let rec aux bl cpt score score_max blocks_spawn =
 													Sdlevent.pump ();
 
